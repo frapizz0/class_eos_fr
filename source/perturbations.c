@@ -6149,16 +6149,19 @@ ppw->pvecback[pba->index_bg_rho_ds]
     double K2_ds = k*k/(a_prime_over_a*a_prime_over_a);
     double rho_ds = ppw->pvecback[pba->index_bg_rho_ds];
     double Omega_ds =ppw->pvecback[pba->index_bg_Omega_ds];
-      double epsilon_H = ppw->pvecback[pba->index_bg_epsilon_H];
+    double epsilon_H = ppw->pvecback[pba->index_bg_epsilon_H];
 
-  double epsilon_H_bar =  ppw->pvecback[pba->index_bg_epsilon_H_bar];
+    double epsilon_H_bar =  ppw->pvecback[pba->index_bg_epsilon_H_bar];
+
+    double B_ds = -ppw->pvecback[pba->index_bg_fR_prime_ds]/epsilon_H/(1.+ppw->pvecback[pba->index_bg_fR_ds]);
+    double M2_ds = 2.*epsilon_H_bar/epsilon_H/B_ds;
   
     double T_tilde_ds =  ppw->pvecmetric[ppw->index_mt_T_tilde_ds];
  
     double Omega_m = 1.-ppw->pvecback[pba->index_bg_Omega_ds];
     double gK_ds = 1.+k*k/(a_prime_over_a*a_prime_over_a)/3./epsilon_H;
 
-    
+    /*
       ppw->pvecmetric[ppw->index_mt_c_G_D_ds] =
         (
          ppw->pvecback[pba->index_bg_gamma_1_hi]
@@ -6381,7 +6384,18 @@ ppw->pvecback[pba->index_bg_rho_ds]
          1.
          -1./3./ppw->pvecback[pba->index_bg_m2_hi]
           );
+    */
 
+    ppw->pvecmetric[ppw->index_mt_c_G_D_ds] = 1./3.-pba->w_ds+M2_ds/K2_ds;
+    ppw->pvecmetric[ppw->index_mt_c_G_T_ds] = 0.0;
+    ppw->pvecmetric[ppw->index_mt_c_G_D_m] = Omega_m/Omega_ds/3.;
+    ppw->pvecmetric[ppw->index_mt_c_G_T_m] = 0.0;
+    ppw->pvecmetric[ppw->index_mt_c_G_G_m] = 0.0;
+    ppw->pvecmetric[ppw->index_mt_c_P_D_ds] = 1.0;
+    ppw->pvecmetric[ppw->index_mt_c_P_T_ds] = 0.0;
+    ppw->pvecmetric[ppw->index_mt_c_P_D_m] = 0.0;
+    ppw->pvecmetric[ppw->index_mt_c_P_T_m] = 0.0;
+    ppw->pvecmetric[ppw->index_mt_c_P_P_m] = 0.0;
 
   double Y_tilde_ds = ppw->pvecmetric[ppw->index_mt_Y_tilde_ds];
   double X_tilde_ds = ppw->pvecmetric[ppw->index_mt_X_tilde_ds];
@@ -8615,11 +8629,17 @@ int perturb_derivs(double tau,
 
     }
 
-
+// aggiunta per i modelli f(R)
   if (pba->has_ds == _TRUE_) {
       
-      
+    double rho_ds = pvecback[pba->index_bg_rho_ds];
+    double p_ds   = pvecback[pba->index_bg_p_ds];
     w = pba->w_ds;
+    //if (rho_ds != 0.0) {
+    //    w = p_ds / rho_ds;
+    //} else {
+    //    w = -1.0; // Fallback di sicurezza
+    //}
 
     double gK_ds = 1. + k2/(a_prime_over_a*a_prime_over_a)
                           /(3.*pvecback[pba->index_bg_epsilon_H]);
@@ -8686,8 +8706,6 @@ int perturb_derivs(double tau,
 		    /pvecback[pba->index_bg_epsilon_H]
     /pvecback[pba->index_bg_B_ds];
 
-      
- //ATTRACTOR IC FOR DS
  double delta_ds_AIC =
   	  2./3./Omega_ds
 	  *K2_ds*K2_ds

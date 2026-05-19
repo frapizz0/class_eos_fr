@@ -1,4 +1,4 @@
-/** @file class.c
+  /** @file class.c
  * Julien Lesgourgues, 17.04.2011
  */
 

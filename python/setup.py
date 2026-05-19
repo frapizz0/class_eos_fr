@@ -9,7 +9,7 @@ import os.path as osp
 
 # Recover the gcc compiler
 GCCPATH_STRING = sbp.Popen(
-    ['gcc-7', '-print-libgcc-file-name'],
+    ['gcc', '-print-libgcc-file-name'],
     stdout=sbp.PIPE).communicate()[0]
 GCCPATH = osp.normpath(osp.dirname(GCCPATH_STRING))
 

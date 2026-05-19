@@ -443,6 +443,7 @@ int input_init(
 
   /** - eventually write all the read parameters in a file, unread parameters in another file, and warnings about unread parameters */
 
+
   class_call(parser_read_string(pfc,"write parameters",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
@@ -508,13 +509,63 @@ int input_read_parameters(
                           struct output *pop,
                           ErrorMsg errmsg
                           ) {
+  int flag1,flag2,flag3,flag4,flag5,flag6;
+  double param1,param2,param3,param4, param5;     
+  char string6[_ARGUMENT_LENGTH_MAX_];                     
+/* ---------F.P. 25-10-2025 ---------*/
 
+//look for the Fr_mod_grav_ model on the ini file. look at the string of the model. If it recognised the model assign for each model a index number
+                     
+class_call(parser_read_string(pfc,"fR_mod_grav_model",&string6,&flag6,errmsg),
+             errmsg,
+             errmsg);
+  if (flag6 == _TRUE_){
+  	if (strstr(string6,"lcdm") != NULL){
+  		pba->l = 0;
+  	}
+  	if (strstr(string6, "HS1") != NULL){
+  		pba->l = 1;
+  	}
+  	if (strstr(string6, "HS4") != NULL){
+  		pba->l = 2;
+  	}
+  	if (strstr(string6, "Star1") != NULL){
+  		pba->l = 3;
+  	}
+  	if (strstr(string6, "Star2") != NULL){
+  		pba->l = 4;
+  	}
+  	if (strstr(string6, "Exp") != NULL){
+  		pba->l = 5;
+  	}
+  	if (strstr(string6, "Tsjk") != NULL){
+  		pba->l = 6;
+  	}
+  	if (strstr(string6, "Log") != NULL){
+  		pba->l = 7;
+  	}
+  	if (strstr(string6, "ArcTanh") != NULL){
+  		pba->l = 8;
+  	}
+  }
+  printf("----------- f(R) modify gravity models -----------\n");
+  printf( "-	INDEX	- \n0 = lcdm,  1 = HS1,   2 = HS4,\n3 = Star1, 4 = Star2, 5 = Exp,\n6 = Tzjk,  7 = Log,   8 = Arctanh)),\nIndex of the Selected model: %d\n" ,pba->l); // print the value of the model of mod. grav.
+  printf("--------------------------------------------------\n");
+  
+//verify the presence in the .ini file of b_parameter. if true -> pass the value to pba->b
+  class_call(parser_read_double(pfc,"fR0_parameter", &param5, &flag5,errmsg),
+  		errmsg,
+		errmsg);
+  if (flag5==_TRUE_){
+ 		 pba->fR0 = param5;
+ 		}
+
+/*-------------------------------------*/
   /** Summary: */
 
   /** - define local variables */
 
-  int flag1,flag2,flag3,flag4;
-  double param1,param2,param3,param4;
+
   int N_ncdm=0,n,entries_read;
   int int1,fileentries;
   double scf_lambda;
@@ -603,6 +654,7 @@ int input_read_parameters(
 
     if ((strstr(string1,"fR") != NULL)) {
       pba->mg_type = fR;
+      printf("fR mod. grav. section ACTIVATED!\n");
     }
 
     if ((strstr(string1,"hi") != NULL)) {
@@ -617,6 +669,7 @@ int input_read_parameters(
 
   
   /** (a) background parameters */
+
 
   /** - scale factor today (arbitrary) */
   class_read_double("a_today",pba->a_today);
@@ -1011,7 +1064,7 @@ int input_read_parameters(
   
   /* Step 2 */
   if (flag1 == _FALSE_) //Fill with Lambda
-    pba->Omega0_lambda= 1. - pba->Omega0_k - Omega_tot;
+    pba->Omega0_lambda = 1. - pba->Omega0_k - Omega_tot;
   else if (flag2 == _FALSE_)  // Fill up with fluid
     pba->Omega0_fld = 1. - pba->Omega0_k - Omega_tot;
   else if ((flag3 == _TRUE_) && (param3 < 0.)){ // Fill up with scalar field
@@ -1034,8 +1087,155 @@ int input_read_parameters(
 
   class_read_string("root",pop->root);
 
+ if (pba->Omega0_ds != 0.) {
+    class_read_double("w_ds",pba->w_ds);
+    class_read_double("ALPHA_ds",ppt->ALPHA_ds);
+    class_read_double("k_max_ds",ppt->k_max_ds);
+    class_read_double("m2_hi_ini",pba->m2_hi_ini);
+    class_read_double("alpha_b_hi",pba->alpha_b_hi);
+    class_read_double("alpha_t_hi",pba->alpha_t_hi);
+    class_read_double("alpha_k_hi",pba->alpha_k_hi);
+    class_read_double("alpha_m_hi",pba->alpha_m_hi);
+    class_read_double("b_ds",pba->b_ds);    
+    class_read_double("B0",pba->B0_asked_ds);    
+    class_read_double("cs2_ds",pba->cs2_ds);    
+    class_read_double("b_min_ds",pba->b_min_ds);    
+    class_read_int("N_b_ds",pba->N_b_ds);    
+    class_read_double("b_max_ds",pba->b_max_ds);    
+    class_read_int("has_loop_over_b_ds",pba->has_loop_over_b_ds);    
+    class_read_int("has_logB0",pba->has_logB0);
+    
+    if(pba->has_logB0 == 1){
+        pba->B0_asked_ds = pow(10.,pba->B0_asked_ds);
+    }
+    
+    class_read_string("root",pop->root);
+    class_read_string("root",ppt->root);
+    FileName name,name2,name3,name4;
+    class_read_string("gauge",name);
+    class_read_string("w_ds",name3);
+    class_read_string("B0",name4);
+    class_read_string("MG/DE type",name2);
+    if(pba->mg_type == fR){
+    if(pba->has_logB0 == 1){
+    sprintf(pop->root,"%s_%s_w=%s_logB0=%s_%s",pop->root,name2,name3,name4,name);
+    sprintf(ppt->root,"%s_%s_w=%s_logB0=%s_%s",ppt->root,name2,name3,name4,name);
+   }
+  else {
+  sprintf(pop->root,"%s_%s_w=%s_B0=%s_%s",pop->root,name2,name3,name4,name);
+  sprintf(ppt->root,"%s_%s_w=%s_B0=%s_%s",ppt->root,name2,name3,name4,name);
+ }
   
-  if (pba->Omega0_ds != 0.) {
+   }
+    /*FileName name,name2,name3,name4;
+    class_read_string("gauge",name);
+    class_read_string("w_ds",name3);
+    class_read_string("B0",name4);
+    
+    
+    // Forza la sincronizzazione logica dell'interruttore della gravità modificata
+    if (strstr(string1, "fR") != NULL) {
+        pba->mg_type = fR;
+        printf("ENTRATO NELLA SEZIONE f(R) CON STRING1!\n");
+    } else if (strstr(name2, "qe") != NULL) {
+        pba->mg_type = qe;
+    } else if (strstr(name2, "hi") != NULL) {
+        pba->mg_type = hi;
+    }
+  
+    if(pba->mg_type == fR){
+        
+        // CORREZIONE 2: Dichiariamo esplicitamente tutte le variabili locali per il sotto-modello
+        char *string6;
+        int flag6;
+        double param5;
+        int flag5;
+        char model_name_str[30] = "unknown"; 
+
+        printf("DEBUG: Entrato con successo nella sezione di scelta di l!\n");
+
+        class_call(parser_read_string(pfc, "fR_mod_grav_model", &string6, &flag6, errmsg),
+                   errmsg,
+                   errmsg);
+                   
+        if (flag6 == _TRUE_) {
+            if (strstr(string6, "lcdm") != NULL) {
+                pba->l = 0;
+                sprintf(model_name_str, "lcdm");
+            }
+            else if (strstr(string6, "HS1") != NULL) {
+                pba->l = 1;
+                sprintf(model_name_str, "HS1");
+            }
+            else if (strstr(string6, "HS4") != NULL) {
+                pba->l = 2;
+                sprintf(model_name_str, "HS4");
+            }
+            else if (strstr(string6, "Star1") != NULL) {
+                pba->l = 3;
+                sprintf(model_name_str, "Star1");
+            }
+            else if (strstr(string6, "Star2") != NULL) {
+                pba->l = 4;
+                sprintf(model_name_str, "Star2");
+            }
+            else if (strstr(string6, "Exp") != NULL) {
+                pba->l = 5;
+                sprintf(model_name_str, "Exp");
+            }
+            else if (strstr(string6, "Tsjk") != NULL) {
+                pba->l = 6;
+                sprintf(model_name_str, "Tsjk");
+            }
+            else if (strstr(string6, "Log") != NULL) {
+                pba->l = 7;
+                sprintf(model_name_str, "Log");
+            }
+            else if (strstr(string6, "ArcTanh") != NULL || strstr(string6, "Arctanh") != NULL) {
+                pba->l = 8;
+                sprintf(model_name_str, "ArcTanh");
+            }
+        }
+
+        printf("\n----------- f(R) modify gravity models -----------\n");
+        printf("0 = lcdm,   1 = HS1,   2 = HS4\n");
+        printf("3 = Star1,  4 = Star2, 5 = Exp\n");
+        printf("6 = Tzjk,   7 = Log,   8 = Arctanh\n\n");
+        printf("Selected model from .ini: %s -> Assigned Index pba->l = %d\n", flag6 == _TRUE_ ? string6 : "NONE", pba->l);
+        printf("--------------------------------------------------\n");
+        fflush(stdout);
+
+        class_call(parser_read_double(pfc, "fR0_parameter", &param5, &flag5, errmsg),
+                   errmsg,
+                   errmsg);
+                   
+        if (flag5 == _TRUE_) {
+            pba->fR0 = param5;
+        }
+
+        // CORREZIONE 3: Mettiamo in perfetto ordine simmetrico le stringhe e i loro %s descrittori
+        if(pba->has_logB0 == 1){
+            sprintf(pop->root,"%s_%s_%s_w=%s_logB0=%s_%s",pop->root,string1,model_name_str,name3,name4,name);
+            sprintf(ppt->root,"%s_%s_%s_w=%s_logB0=%s_%s",ppt->root,string1,model_name_str,name3,name4,name);
+        }
+        else {
+            sprintf(pop->root,"%s_%s_%s_w=%s_B0=%s_%s",pop->root,string1,model_name_str,name3,name4,name);
+            sprintf(ppt->root,"%s_%s_%s_w=%s_B0=%s_%s",ppt->root,string1,model_name_str,name3,name4,name);
+        }
+    }
+    else if(pba->mg_type == qe){
+        class_read_string("cs2_ds",name4);
+        sprintf(pop->root,"%s_%s_w=%s_cs2=%s_%s",pop->root,string1,name3,name4,name);
+        sprintf(ppt->root,"%s_%s_w=%s_cs2=%s_%s",ppt->root,string1,name3,name4,name);
+    }
+    else {
+        sprintf(pop->root,"%s_%s_w=%s_%s",pop->root,string1,name3,name);
+        sprintf(ppt->root,"%s_%s_w=%s_%s",ppt->root,string1,name3,name);
+    }
+
+    class_read_double("a_start_ds",pba->a_start_ds);
+  }
+  /*if (pba->Omega0_ds != 0.) {
     class_read_double("w_ds",pba->w_ds);
     class_read_double("ALPHA_ds",ppt->ALPHA_ds);
     class_read_double("k_max_ds",ppt->k_max_ds);
@@ -1060,22 +1260,70 @@ int input_read_parameters(
     
   class_read_string("root",pop->root);
   class_read_string("root",ppt->root);
+  
   FileName name,name2,name3,name4;
   class_read_string("gauge",name);
   class_read_string("w_ds",name3);
   class_read_string("B0",name4);
   class_read_string("MG/DE type",name2);
-  if(pba->mg_type == fR){
-  if(pba->has_logB0 == 1){
-  sprintf(pop->root,"%s_%s_w=%s_logB0=%s_%s",pop->root,name2,name3,name4,name);
-  sprintf(ppt->root,"%s_%s_w=%s_logB0=%s_%s",ppt->root,name2,name3,name4,name);
-   }
-  else {
-  sprintf(pop->root,"%s_%s_w=%s_B0=%s_%s",pop->root,name2,name3,name4,name);
-  sprintf(ppt->root,"%s_%s_w=%s_B0=%s_%s",ppt->root,name2,name3,name4,name);
- }
   
-   }
+// if MG/DE type = fR so choose the model
+	if(pba->mg_type == fR){
+	printf("Entratto anche per la scelta di l!\n");
+class_call(parser_read_string(pfc,"fR_mod_grav_model",&string6,&flag6,errmsg),
+             errmsg,
+             errmsg);
+  if (flag6 == _TRUE_){
+  	if (strstr(string6,"lcdm") != NULL){
+  		pba->l = 0;
+  	}
+  	if (strstr(string6, "HS1") != NULL){
+  		pba->l = 1;
+  	}
+  	if (strstr(string6, "HS4") != NULL){
+  		pba->l = 2;
+  	}
+  	if (strstr(string6, "Star1") != NULL){
+  		pba->l = 3;
+  	}
+  	if (strstr(string6, "Star2") != NULL){
+  		pba->l = 4;
+  	}
+  	if (strstr(string6, "Exp") != NULL){
+  		pba->l = 5;
+  	}
+  	if (strstr(string6, "Tsjk") != NULL){
+  		pba->l = 6;
+  	}
+  	if (strstr(string6, "Log") != NULL){
+  		pba->l = 7;
+  	}
+  	if (strstr(string6, "ArcTanh") != NULL){
+  		pba->l = 8;
+  	}
+  }
+  printf("----------- f(R) modify gravity models -----------\n");
+  printf( "-	INDEX	- \n0 = lcdm,  1 = HS1,   2 = HS4,\n3 = Star1, 4 = Star2, 5 = Exp,\n6 = Tzjk,  7 = Log,   8 = Arctanh)),\nIndex of the Selected model: %d\n" ,pba->l); // print the value of the model of mod. grav.
+  printf("--------------------------------------------------\n");
+  
+//verify the presence in the .ini file of b_parameter. if true -> pass the value to pba->b
+  class_call(parser_read_double(pfc,"fR0_parameter", &param5, &flag5,errmsg),
+  		errmsg,
+		errmsg);
+  if (flag5==_TRUE_){
+ 		 pba->fR0 = param5;
+ 		}
+
+    // 2. CORREZIONE DELLE STRINGHE OUTPUT (Iniettiamo il nome del modello nel nome del file)
+    if(pba->has_logB0 == 1){
+        sprintf(pop->root,"%s_%s_%s_w=%s_logB0=%s_%s",pop->root,name2,name3,name4,name);
+        sprintf(ppt->root,"%s_%s_%s_w=%s_logB0=%s_%s",ppt->root,name2,name3,name4,name);
+    }
+    else {
+        sprintf(pop->root,"%s_%s_%s_w=%s_B0=%s_%s",pop->root,name2,name3,name4,name);
+        sprintf(ppt->root,"%s_%s_%s_w=%s_B0=%s_%s",ppt->root,name2,name3,name4,name);
+    }
+   }*/
   else if(pba->mg_type == qe){
       class_read_string("cs2_ds",name4);
 
@@ -3244,7 +3492,9 @@ int input_default_precision ( struct precision * ppr ) {
   /** Initialize presicion parameters for different structures:
    * - parameters related to the background
    */
-
+//------------------F.P. 24 nov 2025 ---------
+  //ppr->a_ini_over_a_today_default = 1.e-5;
+//----------------------------------------
   ppr->a_ini_over_a_today_default = 1.e-14;
   ppr->back_integration_stepsize = 7.e-3;
   ppr->tol_background_integration = 1.e-2;

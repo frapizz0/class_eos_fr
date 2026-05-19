@@ -169,6 +169,13 @@ struct background
   int index_bg_a;             /**< scale factor */
   int index_bg_H;             /**< Hubble parameter in \f$Mpc^{-1}\f$ */
   int index_bg_H_prime;       /**< its derivative w.r.t. conformal time */
+  
+  //----------------F.P. 25/12/2025 --------------
+  char * index_fR_model;		//index for choose the f(R) mod. grav. model used for H and H_prime
+  //int index_fR_prime;		//its derivative respect to N=log(a) i.e. dH/da
+  double fR0;			//f(R_0) value, for f(R) modified gravity models
+  int l; 			// f(R) modified gravity model index, 0=lcdm, 1=HS(n=1)
+  //----------------------------------------------
 
   int index_bg_epsilon_H;       /**< @ds slow roll parameter */
   int index_bg_epsilon_H_bar;       /**< @ds decceleration parameter */
@@ -228,6 +235,7 @@ struct background
   
  int index_bg_rho_ds;       /**< dark sector fluid */
   int index_bg_p_ds;       /**< dark sector fluid */
+  int index_bg_w_ds;       // DE equation of state
   int index_bg_Omega_ds;       /**< dark sector fluid */
   
   int bg_size_short;  /**< size of background vector in the "short format" */
@@ -400,7 +408,7 @@ struct background
 
 /**
  * temporary parameters and workspace passed to the background_derivs function
- */
+ */	
 
 struct background_parameters_and_workspace {
 

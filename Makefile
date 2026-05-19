@@ -4,7 +4,6 @@
 MDIR := $(shell pwd)
 WRKDIR = $(MDIR)/build
 
-
 .base:
 	if ! [ -e $(WRKDIR) ]; then mkdir $(WRKDIR) ; mkdir $(WRKDIR)/lib; fi;
 	touch build/.base
@@ -18,7 +17,7 @@ vpath .base build
 ########################################################
 
 # your C compiler:
-CC       = gcc-7
+CC       = gcc
 #CC       = icc
 #CC       = pgcc
 
@@ -26,10 +25,12 @@ CC       = gcc-7
 AR        = ar rv
 
 # (OPT) your python interpreter
-PYTHON = python
+#PYTHON = /mirror/scratch/pace/anaconda2/bin/python
+PYTHON = /home/utente/anaconda3/bin/python
+
 
 # your optimization flag
-OPTFLAG = -O4 -ffast-math #-march=native
+OPTFLAG = -O4 -ffast-math -lm -std=gnu99 #-march=native
 #OPTFLAG = -Ofast -ffast-math #-march=native
 #OPTFLAG = -fast
 
@@ -41,7 +42,6 @@ OMPFLAG   = -fopenmp
 # all other compilation flags
 CCFLAG = -g -fPIC
 LDFLAG = -g -fPIC
-
 
 # leave blank to compile without HyRec, or put path to HyRec directory
 # (with no slash at the end: e.g. hyrec or ../hyrec)
@@ -62,14 +62,13 @@ EXTERNAL =
 
 # Try to automatically avoid an error 'error: can't combine user with ...'
 # which sometimes happens with brewed Python on OSX:
-CFGFILE=$(shell $(PYTHON) -c "import sys; print sys.prefix+'/lib/'+'python'+'.'.join(['%i' % e for e in sys.version_info[0:2]])+'/distutils/distutils.cfg'")
+CFGFILE=$(shell $(PYTHON) -c "import sys; print(sys.prefix+'/lib/'+'python'+'.'.join(['%i' % e for e in sys.version_info[0:2]])+'/distutils/distutils.cfg')")
 PYTHONPREFIX=$(shell grep -s "prefix" $(CFGFILE))
 ifeq ($(PYTHONPREFIX),)
 PYTHONFLAGS=--user
 else
 PYTHONFLAGS=
 endif
-
 
 # eventually update flags for including HyRec
 ifneq ($(HYREC),)
@@ -85,7 +84,7 @@ endif
 
 TOOLS = growTable.o dei_rkck.o sparse.o evolver_rkck.o  evolver_ndf15.o arrays.o parser.o quadrature.o hyperspherical.o common.o
 
-SOURCE = input.o background.o thermodynamics.o perturbations.o primordial.o nonlinear.o transfer.o spectra.o lensing.o 
+SOURCE = input.o background.o thermodynamics.o perturbations.o primordial.o nonlinear.o transfer.o spectra.o lensing.o
 
 INPUT = input.o
 
@@ -113,6 +112,8 @@ CLASS = class.o
 
 TEST_LOOPS = test_loops.o
 
+TEST_LOOPS_OMP = test_loops_omp.o
+
 TEST_DEGENERACY = test_degeneracy.o
 
 TEST_TRANSFER = test_transfer.o
@@ -139,7 +140,7 @@ C_ALL = $(C_MAIN) $(C_TOOLS) $(C_SOURCE)
 H_ALL = $(addprefix include/, common.h svnversion.h $(addsuffix .h, $(basename $(notdir $(C_ALL)))))
 PRE_ALL = cl_ref.pre clt_permille.pre
 INI_ALL = explanatory.ini lcdm.ini
-MISC_FILES = Makefile CPU psd_FD_single.dat myselection.dat myevolution.dat README.rst PARAM-SZ.ini  bbn/sBBN.dat external_Pk/* sz_auxiliary_files/* sz_auxiliary_files/C-M_Zhao09/* cpp include/hermite6_interpolation_csource.h include/hermite4_interpolation_csource.h include/hermite3_interpolation_csource.h output
+MISC_FILES = Makefile CPU psd_FD_single.dat myselection.dat myevolution.dat README bbn/sBBN.dat external_Pk/* cpp
 PYTHON_FILES = python/classy.pyx python/setup.py python/cclassy.pxd python/test_class.py
 
 
@@ -157,6 +158,9 @@ test_sigma: $(TOOLS) $(SOURCE) $(EXTERNAL) $(OUTPUT) $(TEST_SIGMA)
 	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) -o test_sigma $(addprefix build/,$(notdir $^)) -lm
 
 test_loops: $(TOOLS) $(SOURCE) $(EXTERNAL) $(OUTPUT) $(TEST_LOOPS)
+	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) -o $@ $(addprefix build/,$(notdir $^)) -lm
+
+test_loops_omp: $(TOOLS) $(SOURCE) $(EXTERNAL) $(OUTPUT) $(TEST_LOOPS_OMP)
 	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) -o $@ $(addprefix build/,$(notdir $^)) -lm
 
 test_stephane: $(TOOLS) $(SOURCE) $(EXTERNAL) $(OUTPUT) $(TEST_STEPHANE)
@@ -184,11 +188,13 @@ test_hyperspherical: $(TOOLS) $(TEST_HYPERSPHERICAL)
 	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) -o test_hyperspherical $(addprefix build/,$(notdir $^)) -lm
 
 
-tar: $(C_ALL) $(H_ALL) $(PRE_ALL) $(INI_ALL) $(MISC_FILES) $(HYREC) $(PYTHON_FILES)
+tar: $(C_ALL) $(C_TEST) $(H_ALL) $(PRE_ALL) $(INI_ALL) $(MISC_FILES) $(HYREC) $(PYTHON_FILES)
 	tar czvf class.tar.gz $(C_ALL) $(H_ALL) $(PRE_ALL) $(INI_ALL) $(MISC_FILES) $(HYREC) $(PYTHON_FILES)
 
+#classy: libclass.a python/classy.pyx python/cclassy.pxd
+#	cd python; export CC=$(CC); $(PYTHON) setup.py install $(PYTHONFLAGS)
 classy: libclass.a python/classy.pyx python/cclassy.pxd
-	cd python; export CC=$(CC); $(PYTHON) setup.py install $(PYTHONFLAGS)
+	cd python; export CC=gcc; $(PYTHON) setup.py install $(PYTHONFLAGS)
 
 clean: .base
 	rm -rf $(WRKDIR);
